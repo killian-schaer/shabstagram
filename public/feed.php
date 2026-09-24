@@ -35,8 +35,6 @@ require __DIR__ . '/../views/partials/header.php';
 <?php if ($items === []): ?>
     <p class="text-muted"><?= e(t('feed.empty')) ?></p>
 <?php else: ?>
-    <div class="alert alert-warning"><?= e(t('results.legal_notice')) ?></div>
-
     <div class="list-group">
         <?php foreach ($items as $item): ?>
             <?php $isNew = $lastVisitAt !== null && strtotime((string) $item['matched_at']) > strtotime((string) $lastVisitAt); ?>

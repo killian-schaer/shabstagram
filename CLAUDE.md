@@ -34,13 +34,21 @@ d'ensemble fonctionnelle et `CLAUDE-files.md` pour le rôle de chaque fichier.
   suisse courant (numéro d'identification d'entreprise), pas un détail
   d'implémentation. Le mot interne « tenant » (table `tenants`, code) ne
   doit jamais fuiter côté utilisateur — on y parle de « feuille officielle ».
-- **Mention légale obligatoire** : toute page ou tout e-mail qui affiche le
-  contenu ou les résultats d'une publication doit rappeler que seule
-  l'annonce individuelle au format PDF, munie d'une signature électronique
-  qualifiée, fait foi juridiquement (`lang/fr.php` → `results.legal_notice`,
-  utilisé dans `templates/mail/new_hits_digest.mustache`,
-  `public/searches/results.php` et `public/feed.php` — ne pas dupliquer le
-  texte ailleurs).
+- **Mention légale obligatoire** sur la liste des résultats d'une recherche
+  et dans l'e-mail de notification : rappeler que seule l'annonce
+  individuelle au format PDF, munie d'une signature électronique qualifiée,
+  fait foi juridiquement (`lang/fr.php` → `results.legal_notice`, utilisé
+  dans `templates/mail/new_hits_digest.mustache` et
+  `public/searches/results.php` — ne pas dupliquer le texte ailleurs).
+  Volontairement absente de `public/feed.php` (retirée sur demande).
+- **Pas de `prompt()`/`alert()`/`confirm()` JavaScript natifs.** Toute
+  confirmation ou interaction utilisateur passe par une modale Bootstrap
+  (voir le modèle de confirmation de suppression dans
+  `public/searches/index.php`).
+- **Le chiffre de contrôle de l'UID est vérifié** (`Shabstagram\Support\Uid`),
+  selon l'algorithme Modulo 11 de la norme eCH-0097 (poids 5,4,3,2,7,6,5,4
+  sur les 8 premiers chiffres). Ne jamais revenir à une simple vérification
+  de format sans ce contrôle.
 - **Autorisation par groupe Entra, non granulaire.** Deux rôles seulement :
   administrateur ou utilisateur, déterminés à chaque connexion par
   l'appartenance aux groupes nommés dans `ENTRA_ADMIN_GROUP_NAME` /

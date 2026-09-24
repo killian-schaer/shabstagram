@@ -36,7 +36,7 @@ chaque fichier ajouté, renommé ou supprimé.
 | `Env.php` | Accesseurs typés sur `$_ENV` (string/bool/int/csv), utilisés uniquement par `config/config.php`. |
 | `Config.php` | Accès en lecture à la configuration chargée par `bootstrap.php`. |
 | `Lang.php` | Charge `lang/{locale}.php` et fournit `t($clé, $variables)`. |
-| `Uid.php` | Validation et normalisation d'un numéro d'entreprise (format `CHE-XXX.XXX.XXX`). |
+| `Uid.php` | Validation et normalisation d'un numéro d'entreprise (format `CHE-XXX.XXX.XXX`), y compris la vérification du chiffre de contrôle (Modulo 11, norme eCH-0097). |
 | `Flash.php` | Message ponctuel affiché après une action (succès/erreur), stocké en session. |
 | `Heartbeat.php` | Lecture/écriture des fichiers de battement de cœur (JSON sur disque) utilisés par les deux crons. |
 
@@ -122,9 +122,9 @@ chaque fichier ajouté, renommé ou supprimé.
 | `login.php` | Page de connexion (bouton vers Entra ID). |
 | `callback.php` | Traitement du retour de connexion Entra ID : vérification d'appartenance aux groupes admin/utilisateur (`DirectoryGroups`), création/mise à jour de l'utilisateur, ouverture de session. |
 | `logout.php` | Déconnexion. |
-| `feed.php` | Fil d'actualité chronologique des publications trouvées (les siennes, ou toutes pour un administrateur), avec repère « nouveau » depuis la dernière visite. |
+| `feed.php` | Fil d'actualité chronologique des publications trouvées (les siennes, ou toutes pour un administrateur), avec repère « nouveau » depuis la dernière visite. Ne comporte volontairement pas la mention légale sur le PDF (retirée sur demande). |
 | `admin/sync.php` | Bouton temporaire réservé aux administrateurs : déclenche `SearchSyncService` sans jamais appeler le dispatcher de notifications. |
-| `searches/index.php` | Tableau de bord : liste des recherches (les siennes, ou toutes avec propriétaire affiché pour un administrateur), activation/suspension, accès aux actions. |
+| `searches/index.php` | Tableau de bord : liste des recherches (les siennes, ou toutes avec propriétaire affiché pour un administrateur), activation/suspension, accès aux actions. La suppression est confirmée par une modale Bootstrap (pas de `confirm()` natif). |
 | `searches/create.php` | Création d'une recherche (propriétaire facultatif, nom facultatif avec repli sur le terme saisi, option de recherche complémentaire en mode UID). |
 | `searches/edit.php` | Modification d'une recherche existante (accès contrôlé par `Access::canAccessSearch()`). |
 | `searches/toggle.php` | Bascule active/inactive (action POST). |
