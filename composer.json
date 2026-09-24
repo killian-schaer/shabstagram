@@ -1,0 +1,25 @@
+{
+    "name": "budin/shabstagram",
+    "description": "Veille automatisee des publications de la Feuille officielle suisse du commerce (FOSC) avec notification par e-mail.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "vlucas/phpdotenv": "^5.6",
+        "league/oauth2-client": "^2.7",
+        "thenetworg/oauth2-azure": "^2.2",
+        "guzzlehttp/guzzle": "^7.9",
+        "mustache/mustache": "^2.14"
+    },
+    "autoload": {
+        "psr-4": {
+            "Shabstagram\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

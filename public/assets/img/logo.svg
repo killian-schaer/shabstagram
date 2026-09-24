@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="shabstagram-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#123475"/>
+      <stop offset="100%" stop-color="#3f7fd1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond carre arrondi -->
+  <rect x="2" y="2" width="96" height="96" rx="22" fill="url(#shabstagram-bg)"/>
+
+  <!-- Petit declencheur en haut a gauche, clin d'oeil a un appareil photo -->
+  <rect x="30" y="16" width="22" height="8" rx="4" fill="#ffffff" opacity="0.9"/>
+
+  <!-- Corps de l'appareil -->
+  <rect x="16" y="24" width="68" height="52" rx="12" fill="none" stroke="#ffffff" stroke-width="5"/>
+
+  <!-- Petit viseur -->
+  <circle cx="70" cy="34" r="3" fill="#ffffff"/>
+
+  <!-- Objectif -->
+  <circle cx="50" cy="52" r="19" fill="#ffffff"/>
+  <circle cx="50" cy="52" r="19" fill="none" stroke="#123475" stroke-width="2"/>
+
+  <!-- Signe paragraphe (clin d'oeil juridique), au centre de l'objectif -->
+  <text x="50" y="61" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="26" font-weight="bold" fill="#123475">&#167;</text>
+</svg>

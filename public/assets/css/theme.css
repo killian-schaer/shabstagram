@@ -1,0 +1,24 @@
+/* Surcharges Bootstrap minimales pour la couleur d'accent de l'application. */
+
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.btn-outline-primary {
+    color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+a {
+    color: var(--bs-primary);
+}
+
+.badge-owner {
+    background-color: var(--bs-primary);
+}

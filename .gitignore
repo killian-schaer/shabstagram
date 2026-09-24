@@ -1,0 +1,17 @@
+# Environnement (contient des secrets, jamais commite)
+.env
+
+# Dependances installees par Composer
+/vendor/
+
+# Fichiers generes par l'application (donnees stockees, journaux, battements de coeur)
+/storage/*
+!/storage/.gitkeep
+/var/logs/*
+!/var/logs/.gitkeep
+/var/heartbeat/*
+!/var/heartbeat/.gitkeep
+
+# Divers
+.DS_Store
+*.log

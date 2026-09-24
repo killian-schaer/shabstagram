@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32">
+  <defs>
+    <linearGradient id="shabstagram-fav-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#123475"/>
+      <stop offset="100%" stop-color="#3f7fd1"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="96" height="96" rx="24" fill="url(#shabstagram-fav-bg)"/>
+  <rect x="18" y="26" width="64" height="48" rx="12" fill="none" stroke="#ffffff" stroke-width="6"/>
+  <circle cx="50" cy="51" r="17" fill="#ffffff"/>
+  <text x="50" y="59" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="24" font-weight="bold" fill="#123475">&#167;</text>
+</svg>
