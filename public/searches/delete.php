@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../bootstrap.php';
 
+use Shabstagram\Auth\Access;
 use Shabstagram\Auth\Session;
 use Shabstagram\Db\Database;
 use Shabstagram\Db\Repositories\SearchRepository;
@@ -22,7 +23,7 @@ $searchRepository = new SearchRepository($db);
 $searchId = (int) ($_POST['id'] ?? 0);
 $search = $searchRepository->findById($searchId);
 
-if ($search !== null && ($currentUser['id'] === null || (int) $search['owner_user_id'] === (int) $currentUser['id'])) {
+if ($search !== null && Access::canAccessSearch($currentUser, $search)) {
     // Les événements, résultats et notifications liés sont supprimés en cascade (contraintes ON DELETE CASCADE).
     $searchRepository->delete($searchId);
     Flash::set('success', t('search_actions.deleted_flash'));

@@ -22,23 +22,41 @@ d'ensemble fonctionnelle et `CLAUDE-files.md` pour le rôle de chaque fichier.
   `$_ENV`). N'ajouter aucune valeur de configuration en dur dans le code.
 - **`AUTH_KILLSWITCH` est dangereux.** Actif, il contourne entièrement la
   connexion Entra ID et ouvre une session d'administration factice
-  (`Shabstagram\Auth\Killswitch`), sans jamais créer de ligne dans `users`.
-  Ne jamais l'activer par défaut, ni le proposer comme solution à un
-  problème de connexion en production.
+  (`Shabstagram\Auth\Killswitch`, traitée comme administratrice), sans
+  jamais créer de ligne dans `users`. Ne jamais l'activer par défaut, ni le
+  proposer comme solution à un problème de connexion en production.
 - **Rédaction de l'interface en français** : vouvoiement systématique,
-  orthographe et accents soignés, aucun terme technique visible
-  (pas d'« API », de « tenant », de « cron », d'« Entra », de « Graph », de
-  « XML », de « webservice »). Le mot « UID » est acceptable : c'est un
-  terme métier suisse courant (numéro d'identification d'entreprise), pas
-  un détail d'implémentation. Le mot interne « tenant » (table `tenants`,
-  code) ne doit jamais fuiter côté utilisateur — on y parle de « feuille
-  officielle ».
+  orthographe et accents soignés, pas de « nous » (formulations
+  impersonnelles : « il est recommandé de… » plutôt que « nous vous
+  recommandons de… »), aucun terme technique visible (pas d'« API », de
+  « tenant », de « cron », d'« Entra », de « Graph », de « XML », de
+  « webservice »). Le mot « UID » est acceptable : c'est un terme métier
+  suisse courant (numéro d'identification d'entreprise), pas un détail
+  d'implémentation. Le mot interne « tenant » (table `tenants`, code) ne
+  doit jamais fuiter côté utilisateur — on y parle de « feuille officielle ».
 - **Mention légale obligatoire** : toute page ou tout e-mail qui affiche le
   contenu ou les résultats d'une publication doit rappeler que seule
   l'annonce individuelle au format PDF, munie d'une signature électronique
   qualifiée, fait foi juridiquement (`lang/fr.php` → `results.legal_notice`,
-  déjà utilisé dans `templates/mail/new_hits_digest.mustache` et
-  `public/searches/results.php` — ne pas dupliquer le texte ailleurs).
+  utilisé dans `templates/mail/new_hits_digest.mustache`,
+  `public/searches/results.php` et `public/feed.php` — ne pas dupliquer le
+  texte ailleurs).
+- **Autorisation par groupe Entra, non granulaire.** Deux rôles seulement :
+  administrateur ou utilisateur, déterminés à chaque connexion par
+  l'appartenance aux groupes nommés dans `ENTRA_ADMIN_GROUP_NAME` /
+  `ENTRA_USER_GROUP_NAME` (`Shabstagram\Auth\DirectoryGroups`). Ne jamais
+  introduire de rôles ou permissions plus fins sans qu'on le demande
+  explicitement.
+- **Une recherche peut n'avoir aucun propriétaire** (`searches.owner_user_id`
+  est `NULL`-able). Elle reste alors visible et gérable uniquement par les
+  administrateurs, et ne doit **jamais** générer de notification — voir
+  `Shabstagram\Fosc\SearchSyncService::storePublicationAndRecordHit()`, qui
+  ne prépare les notifications que si un propriétaire existe. Ne jamais
+  contourner cette règle même pour un usage interne.
+- **Toute vérification d'accès à une recherche passe par
+  `Shabstagram\Auth\Access::canAccessSearch()`**, jamais par une comparaison
+  manuelle de `owner_user_id` : un administrateur doit toujours pouvoir agir
+  comme s'il était propriétaire.
 
 ## Conventions d'architecture
 
@@ -62,6 +80,16 @@ d'ensemble fonctionnelle et `CLAUDE-files.md` pour le rôle de chaque fichier.
 - Les deux tâches planifiées (`bin/cron_fosc_check.php` et
   `bin/cron_health_check.php`) doivent rester indépendantes : la seconde
   doit pouvoir alerter même si la base de données est en panne.
+- La recherche (`Shabstagram\Fosc\SearchSyncService`) et l'envoi des
+  notifications (`Shabstagram\Notify\NotificationDispatcher`) sont deux
+  étapes délibérément séparées, chacune appelable indépendamment — c'est ce
+  qui permet à `public/admin/sync.php` (bouton de synchronisation manuelle,
+  réservé aux administrateurs, **temporaire** — prévu pour être retiré) de
+  synchroniser sans jamais envoyer de courriel : il n'appelle que le
+  premier service.
+- Le nom d'une recherche (`searches.label`) est facultatif côté formulaire :
+  s'il est vide, le code (pas la base) calcule une valeur de repli à partir
+  du mot-clé ou de l'UID saisi avant l'enregistrement.
 
 ## Git / déploiement
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../bootstrap.php';
 
+use Shabstagram\Auth\Access;
 use Shabstagram\Auth\Session;
 use Shabstagram\Db\Database;
 use Shabstagram\Db\Repositories\EventRepository;
@@ -21,7 +22,7 @@ $eventRepository = new EventRepository($db);
 $searchId = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 $search = $searchRepository->findById($searchId);
 
-if ($search === null || ($currentUser['id'] !== null && (int) $search['owner_user_id'] !== (int) $currentUser['id'])) {
+if ($search === null || !Access::canAccessSearch($currentUser, $search)) {
     http_response_code(404);
     exit(t('dashboard.empty'));
 }
@@ -51,10 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formValues['uid'] = trim((string) ($_POST['uid'] ?? ''));
     $formValues['tenant_ids'] = array_map('intval', $_POST['tenant_ids'] ?? []);
 
-    if ($formValues['label'] === '') {
-        $errors[] = t('search_form.label');
-    }
-
     $normalizedUid = null;
     if ($formValues['mode'] === 'plaintext' && $formValues['keyword'] === '') {
         $errors[] = t('search_form.keyword');
@@ -70,9 +67,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($errors === []) {
+        // Le nom est facultatif : à défaut, on reprend le terme de recherche saisi.
+        $effectiveLabel = $formValues['label'] !== ''
+            ? $formValues['label']
+            : ($formValues['mode'] === 'plaintext' ? $formValues['keyword'] : $normalizedUid);
+
         $searchRepository->update(
             $searchId,
-            $formValues['label'],
+            $effectiveLabel,
             $formValues['mode'],
             $formValues['mode'] === 'plaintext' ? $formValues['keyword'] : null,
             $formValues['mode'] === 'uid' ? $normalizedUid : null
@@ -82,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $searchRepository->replaceTenants($searchId, $formValues['tenant_ids']);
         }
 
-        $eventRepository->log($searchId, 'search_updated', 'Recherche modifiée : ' . $formValues['label']);
+        $eventRepository->log($searchId, 'search_updated', 'Recherche modifiée : ' . $effectiveLabel);
         Flash::set('success', t('search_form.updated_flash'));
         header('Location: /searches/index.php');
         exit;

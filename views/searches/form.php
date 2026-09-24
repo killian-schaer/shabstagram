@@ -28,12 +28,6 @@ $searchId ??= null;
 
 <form method="post" class="col-lg-8">
     <div class="mb-3">
-        <label for="label" class="form-label"><?= e(t('search_form.label')) ?></label>
-        <input type="text" class="form-control" id="label" name="label" value="<?= e($formValues['label']) ?>" required>
-        <div class="form-text"><?= e(t('search_form.label_help')) ?></div>
-    </div>
-
-    <div class="mb-3">
         <label class="form-label"><?= e(t('search_form.mode')) ?></label>
         <div class="form-check">
             <input class="form-check-input" type="radio" name="mode" id="mode_plaintext" value="plaintext"
@@ -78,6 +72,12 @@ $searchId ??= null;
             <input type="text" class="form-control" id="companion_keyword" name="companion_keyword" value="<?= e($formValues['companion_keyword']) ?>">
         </div>
         <?php endif; ?>
+    </div>
+
+    <div class="mb-3">
+        <label for="label" class="form-label"><?= e(t('search_form.label')) ?></label>
+        <input type="text" class="form-control" id="label" name="label" value="<?= e($formValues['label']) ?>">
+        <div class="form-text"><?= e(t('search_form.label_help')) ?></div>
     </div>
 
     <?php if ($showTenantPicker): ?>

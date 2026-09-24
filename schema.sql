@@ -38,6 +38,12 @@ CREATE TABLE users (
     entra_object_id     CHAR(36)     NOT NULL,           -- identifiant unique de l'annuaire professionnel (claim "oid")
     upn                 VARCHAR(255) NOT NULL,           -- identifiant de connexion / adresse professionnelle
     display_name        VARCHAR(255) NOT NULL,
+    -- Recalcule a chaque connexion a partir de l'appartenance au groupe
+    -- Entra administrateur (voir ENTRA_ADMIN_GROUP_NAME dans .env).
+    is_admin            TINYINT(1)   NOT NULL DEFAULT 0,
+    -- Derniere visite du fil d'actualite (vue "feed"), pour marquer les
+    -- publications apparues depuis la derniere visite.
+    last_feed_visit_at  DATETIME     NULL,
     created_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_users_entra_object_id (entra_object_id),
@@ -46,10 +52,14 @@ CREATE TABLE users (
 
 -- ---------------------------------------------------------------------------
 -- searches : criteres de recherche enregistres par un utilisateur.
+-- owner_user_id peut etre NULL (recherche creee sans utilisateur associe,
+-- notamment via le mode de secours, ou devenue orpheline apres suppression
+-- de son proprietaire) : elle reste alors visible uniquement du groupe des
+-- administrateurs, et aucune notification n'est jamais envoyee pour elle.
 -- ---------------------------------------------------------------------------
 CREATE TABLE searches (
     id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    owner_user_id       INT UNSIGNED NOT NULL,
+    owner_user_id       INT UNSIGNED NULL,
     label               VARCHAR(255) NOT NULL,
     mode                ENUM('plaintext','uid') NOT NULL,
     keyword             VARCHAR(500) NULL,               -- utilise si mode = plaintext
@@ -64,7 +74,7 @@ CREATE TABLE searches (
     updated_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_searches_owner (owner_user_id),
     KEY idx_searches_active (active),
-    CONSTRAINT fk_searches_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_searches_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT fk_searches_paired FOREIGN KEY (paired_search_id) REFERENCES searches(id) ON DELETE SET NULL,
     CONSTRAINT chk_searches_mode_fields CHECK (
         (mode = 'plaintext' AND keyword IS NOT NULL) OR

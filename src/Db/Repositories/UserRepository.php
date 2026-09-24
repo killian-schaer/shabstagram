@@ -32,19 +32,21 @@ final class UserRepository
 
     /**
      * Crée l'utilisateur au premier login réel, ou met à jour son nom
-     * affiché s'il a changé depuis la dernière connexion.
+     * affiché et son statut administrateur (recalculé à chaque connexion
+     * à partir de l'appartenance aux groupes Entra).
      */
-    public function upsertFromEntra(string $entraObjectId, string $upn, string $displayName): int
+    public function upsertFromEntra(string $entraObjectId, string $upn, string $displayName, bool $isAdmin): int
     {
         $existing = $this->findByEntraObjectId($entraObjectId);
 
         if ($existing !== null) {
             $stmt = $this->db->prepare(
-                'UPDATE users SET upn = :upn, display_name = :display_name WHERE id = :id'
+                'UPDATE users SET upn = :upn, display_name = :display_name, is_admin = :is_admin WHERE id = :id'
             );
             $stmt->execute([
                 'upn' => $upn,
                 'display_name' => $displayName,
+                'is_admin' => $isAdmin ? 1 : 0,
                 'id' => $existing['id'],
             ]);
 
@@ -52,14 +54,21 @@ final class UserRepository
         }
 
         $stmt = $this->db->prepare(
-            'INSERT INTO users (entra_object_id, upn, display_name) VALUES (:oid, :upn, :display_name)'
+            'INSERT INTO users (entra_object_id, upn, display_name, is_admin) VALUES (:oid, :upn, :display_name, :is_admin)'
         );
         $stmt->execute([
             'oid' => $entraObjectId,
             'upn' => $upn,
             'display_name' => $displayName,
+            'is_admin' => $isAdmin ? 1 : 0,
         ]);
 
         return (int) $this->db->lastInsertId();
+    }
+
+    public function touchFeedVisit(int $id): void
+    {
+        $stmt = $this->db->prepare('UPDATE users SET last_feed_visit_at = NOW() WHERE id = :id');
+        $stmt->execute(['id' => $id]);
     }
 }

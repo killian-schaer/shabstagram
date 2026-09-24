@@ -31,6 +31,8 @@ return [
         'client_secret' => Env::string('ENTRA_CLIENT_SECRET', ''),
         'redirect_uri' => Env::string('ENTRA_REDIRECT_URI', ''),
         'login_scopes' => Env::string('ENTRA_LOGIN_SCOPES', 'openid profile email User.Read'),
+        'admin_group_name' => Env::string('ENTRA_ADMIN_GROUP_NAME', ''),
+        'user_group_name' => Env::string('ENTRA_USER_GROUP_NAME', ''),
     ],
 
     'graph' => [

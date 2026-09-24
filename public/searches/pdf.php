@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../bootstrap.php';
 
+use Shabstagram\Auth\Access;
 use Shabstagram\Auth\Session;
 use Shabstagram\Db\Database;
 
@@ -25,7 +26,7 @@ $row = $stmt->fetch();
 if ($row === false
     || empty($row['pdf_path'])
     || !is_file($row['pdf_path'])
-    || ($currentUser['id'] !== null && (int) $row['owner_user_id'] !== (int) $currentUser['id'])
+    || !Access::canAccessSearch($currentUser, ['owner_user_id' => $row['owner_user_id'] === null ? null : (int) $row['owner_user_id']])
 ) {
     http_response_code(404);
     exit;

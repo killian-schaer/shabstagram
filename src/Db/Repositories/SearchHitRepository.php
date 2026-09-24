@@ -58,4 +58,37 @@ final class SearchHitRepository
 
         return $stmt->fetchAll();
     }
+
+    /**
+     * Fil d'actualité : toutes les correspondances visibles par
+     * l'utilisateur (ses propres recherches, ou l'ensemble pour un
+     * administrateur), les plus récentes en premier.
+     *
+     * @return array[]
+     */
+    public function listFeedFor(?int $ownerUserId, bool $isAdmin, int $limit = 200): array
+    {
+        $sql = 'SELECT sh.id AS hit_id, sh.matched_at, s.label AS search_label, s.owner_user_id, t.label AS tenant_label, p.*
+                FROM search_hits sh
+                INNER JOIN searches s ON s.id = sh.search_id
+                INNER JOIN publications p ON p.id = sh.publication_id
+                INNER JOIN tenants t ON t.id = p.tenant_id';
+
+        $params = [];
+        if (!$isAdmin) {
+            $sql .= ' WHERE s.owner_user_id = :owner';
+            $params['owner'] = $ownerUserId;
+        }
+
+        $sql .= ' ORDER BY sh.matched_at DESC, p.publication_date DESC LIMIT :limit';
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_INT);
+        }
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
 }

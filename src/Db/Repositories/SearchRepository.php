@@ -35,6 +35,24 @@ final class SearchRepository
     }
 
     /**
+     * Toutes les recherches, y compris celles sans propriétaire — réservé
+     * aux administrateurs, qui voient les recherches de tout le monde.
+     *
+     * @return array[] chaque ligne : colonnes de "searches" + 'owner_display_name' (NULL si aucun propriétaire)
+     */
+    public function listAll(): array
+    {
+        $stmt = $this->db->query(
+            'SELECT s.*, u.display_name AS owner_display_name
+             FROM searches s
+             LEFT JOIN users u ON u.id = s.owner_user_id
+             ORDER BY s.created_at DESC'
+        );
+
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Recherches actives, chacune associée à la liste de ses feuilles
      * officielles ciblées — utilisé par le cron principal.
      *
@@ -60,7 +78,7 @@ final class SearchRepository
     }
 
     public function create(
-        int $ownerUserId,
+        ?int $ownerUserId,
         string $label,
         string $mode,
         ?string $keyword,

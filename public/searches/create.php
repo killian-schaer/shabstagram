@@ -33,10 +33,6 @@ $formValues = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($currentUser['id'] === null) {
-        $errors[] = 'Impossible de créer une recherche en mode de secours (aucun utilisateur réel associé).';
-    }
-
     $formValues['label'] = trim((string) ($_POST['label'] ?? ''));
     $formValues['mode'] = ($_POST['mode'] ?? 'plaintext') === 'uid' ? 'uid' : 'plaintext';
     $formValues['keyword'] = trim((string) ($_POST['keyword'] ?? ''));
@@ -44,10 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $formValues['add_companion_search'] = isset($_POST['add_companion_search']);
     $formValues['companion_keyword'] = trim((string) ($_POST['companion_keyword'] ?? ''));
     $formValues['tenant_ids'] = array_map('intval', $_POST['tenant_ids'] ?? []);
-
-    if ($formValues['label'] === '') {
-        $errors[] = t('search_form.label');
-    }
 
     $normalizedUid = null;
     if ($formValues['mode'] === 'plaintext' && $formValues['keyword'] === '') {
@@ -69,20 +61,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($errors === []) {
         $tenantIds = $showTenantPicker ? $formValues['tenant_ids'] : array_map(static fn ($t) => (int) $t['id'], $tenants);
 
+        // Le nom est facultatif : à défaut, on reprend le terme de recherche saisi.
+        $effectiveLabel = $formValues['label'] !== ''
+            ? $formValues['label']
+            : ($formValues['mode'] === 'plaintext' ? $formValues['keyword'] : $normalizedUid);
+
         $searchId = $searchRepository->create(
-            (int) $currentUser['id'],
-            $formValues['label'],
+            $currentUser['id'],
+            $effectiveLabel,
             $formValues['mode'],
             $formValues['mode'] === 'plaintext' ? $formValues['keyword'] : null,
             $formValues['mode'] === 'uid' ? $normalizedUid : null
         );
         $searchRepository->attachTenants($searchId, $tenantIds);
-        $eventRepository->log($searchId, 'search_created', 'Recherche créée : ' . $formValues['label']);
+        $eventRepository->log($searchId, 'search_created', 'Recherche créée : ' . $effectiveLabel);
 
         if ($formValues['mode'] === 'uid' && $formValues['add_companion_search']) {
+            $companionLabel = $formValues['label'] !== ''
+                ? $formValues['label'] . ' (recherche complémentaire)'
+                : $formValues['companion_keyword'];
+
             $companionId = $searchRepository->create(
-                (int) $currentUser['id'],
-                $formValues['label'] . ' (recherche complémentaire)',
+                $currentUser['id'],
+                $companionLabel,
                 'plaintext',
                 $formValues['companion_keyword'],
                 null,
@@ -90,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $searchRepository->attachTenants($companionId, $tenantIds);
             $searchRepository->setPairedSearchId($searchId, $companionId);
-            $eventRepository->log($companionId, 'search_created', 'Recherche complémentaire créée pour : ' . $formValues['label']);
+            $eventRepository->log($companionId, 'search_created', 'Recherche complémentaire créée pour : ' . $effectiveLabel);
         }
 
         Flash::set('success', t('search_form.created_flash'));

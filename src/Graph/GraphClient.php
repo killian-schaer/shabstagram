@@ -42,10 +42,11 @@ final class GraphClient
 
     /**
      * @param array<string,mixed> $body
+     * @return array<string,mixed> Corps de la réponse décodé (vide si la réponse n'a pas de contenu, ex: envoi de mail)
      */
-    public function post(string $path, array $body): void
+    public function post(string $path, array $body): array
     {
-        $this->http->post("https://graph.microsoft.com/v1.0{$path}", [
+        $response = $this->http->post("https://graph.microsoft.com/v1.0{$path}", [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->getAppToken(),
                 'Content-Type' => 'application/json',
@@ -53,6 +54,10 @@ final class GraphClient
             'json' => $body,
             'timeout' => 20,
         ]);
+
+        $raw = (string) $response->getBody();
+
+        return $raw === '' ? [] : (json_decode($raw, true) ?? []);
     }
 
     private function getAppToken(): string

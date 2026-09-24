@@ -14,7 +14,7 @@ use Shabstagram\Support\Config;
 final class Session
 {
     /**
-     * @return array{id:?int,display_name:string,upn:string,is_killswitch:bool}
+     * @return array{id:?int,display_name:string,upn:string,is_killswitch:bool,is_admin:bool}
      */
     public static function requireAuth(): array
     {
@@ -33,6 +33,7 @@ final class Session
             'display_name' => (string) ($_SESSION['display_name'] ?? ''),
             'upn' => (string) ($_SESSION['upn'] ?? ''),
             'is_killswitch' => false,
+            'is_admin' => (bool) ($_SESSION['is_admin'] ?? false),
         ];
     }
 
@@ -41,12 +42,13 @@ final class Session
         return Killswitch::isEnabled();
     }
 
-    public static function login(int $userId, string $displayName, string $upn): void
+    public static function login(int $userId, string $displayName, string $upn, bool $isAdmin): void
     {
         session_regenerate_id(true);
         $_SESSION['user_id'] = $userId;
         $_SESSION['display_name'] = $displayName;
         $_SESSION['upn'] = $upn;
+        $_SESSION['is_admin'] = $isAdmin;
     }
 
     public static function logout(): void

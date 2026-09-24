@@ -37,8 +37,15 @@ $flash = Flash::consume();
             <?= e($appName) ?>
         </a>
         <?php if ($currentUser !== null): ?>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-white-50 small"><?= e(t('auth.logged_in_as', ['name' => $currentUser['display_name']])) ?></span>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/searches/index.php" class="btn btn-outline-light btn-sm"><?= e(t('nav.dashboard')) ?></a>
+            <a href="/feed.php" class="btn btn-outline-light btn-sm"><?= e(t('nav.feed')) ?></a>
+            <?php if ($currentUser['is_admin']): ?>
+                <form method="post" action="/admin/sync.php" class="d-inline">
+                    <button type="submit" class="btn btn-outline-light btn-sm"><?= e(t('admin.sync_button')) ?></button>
+                </form>
+            <?php endif; ?>
+            <span class="text-white-50 small ms-2"><?= e(t('auth.logged_in_as', ['name' => $currentUser['display_name']])) ?></span>
             <a href="/logout.php" class="btn btn-outline-light btn-sm"><?= e(t('nav.logout')) ?></a>
         </div>
         <?php endif; ?>

@@ -14,12 +14,12 @@ $db = Database::connection();
 $searchRepository = new SearchRepository($db);
 $watcherRepository = new WatcherRepository($db);
 
-// La session de secours (killswitch) n'appartient à aucun utilisateur réel :
-// elle voit alors l'ensemble des recherches, pour rester utilisable en développement.
-if ($currentUser['id'] === null) {
-    $searches = $db->query('SELECT * FROM searches ORDER BY created_at DESC')->fetchAll();
+// Un administrateur voit les recherches de tout le monde, y compris celles
+// sans propriétaire, comme si elles lui appartenaient.
+if ($currentUser['is_admin']) {
+    $searches = $searchRepository->listAll();
 } else {
-    $searches = $searchRepository->listForOwner($currentUser['id']);
+    $searches = $currentUser['id'] !== null ? $searchRepository->listForOwner($currentUser['id']) : [];
 }
 
 $pageTitle = t('dashboard.title');
@@ -42,12 +42,18 @@ require __DIR__ . '/../../views/partials/header.php';
                 <th><?= e(t('dashboard.column_mode')) ?></th>
                 <th><?= e(t('dashboard.column_status')) ?></th>
                 <th><?= e(t('dashboard.column_watchers')) ?></th>
+                <?php if ($currentUser['is_admin']): ?>
+                    <th><?= e(t('dashboard.column_owner')) ?></th>
+                <?php endif; ?>
                 <th><?= e(t('general.actions')) ?></th>
             </tr>
             </thead>
             <tbody>
             <?php foreach ($searches as $search): ?>
-                <?php $watcherCount = count($watcherRepository->listForSearch((int) $search['id'])); ?>
+                <?php
+                    $watcherCount = count($watcherRepository->listForSearch((int) $search['id']));
+                    $recipientCount = $watcherCount + ($search['owner_user_id'] !== null ? 1 : 0);
+                ?>
                 <tr>
                     <td>
                         <?= e($search['label']) ?>
@@ -67,7 +73,16 @@ require __DIR__ . '/../../views/partials/header.php';
                             <span class="badge bg-secondary"><?= e(t('dashboard.status_inactive')) ?></span>
                         <?php endif; ?>
                     </td>
-                    <td><?= (int) $watcherCount + 1 ?></td>
+                    <td><?= (int) $recipientCount ?></td>
+                    <?php if ($currentUser['is_admin']): ?>
+                        <td>
+                            <?php if ($search['owner_user_id'] === null): ?>
+                                <span class="badge bg-warning text-dark"><?= e(t('dashboard.no_owner')) ?></span>
+                            <?php else: ?>
+                                <?= e($search['owner_display_name'] ?? '') ?>
+                            <?php endif; ?>
+                        </td>
+                    <?php endif; ?>
                     <td class="d-flex flex-wrap gap-2">
                         <a href="/searches/results.php?id=<?= (int) $search['id'] ?>" class="btn btn-sm btn-outline-primary"><?= e(t('dashboard.view_results')) ?></a>
                         <a href="/searches/events.php?id=<?= (int) $search['id'] ?>" class="btn btn-sm btn-outline-secondary"><?= e(t('dashboard.view_events')) ?></a>

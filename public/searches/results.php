@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../bootstrap.php';
 
+use Shabstagram\Auth\Access;
 use Shabstagram\Auth\Session;
 use Shabstagram\Db\Database;
 use Shabstagram\Db\Repositories\SearchHitRepository;
@@ -17,7 +18,7 @@ $hitRepository = new SearchHitRepository($db);
 $searchId = (int) ($_GET['id'] ?? 0);
 $search = $searchRepository->findById($searchId);
 
-if ($search === null || ($currentUser['id'] !== null && (int) $search['owner_user_id'] !== (int) $currentUser['id'])) {
+if ($search === null || !Access::canAccessSearch($currentUser, $search)) {
     http_response_code(404);
     exit(t('dashboard.empty'));
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../bootstrap.php';
 
+use Shabstagram\Auth\Access;
 use Shabstagram\Auth\Session;
 use Shabstagram\Db\Database;
 use Shabstagram\Db\Repositories\EventRepository;
@@ -24,7 +25,7 @@ $eventRepository = new EventRepository($db);
 $searchId = (int) ($_POST['id'] ?? 0);
 $search = $searchRepository->findById($searchId);
 
-if ($search !== null && ($currentUser['id'] === null || (int) $search['owner_user_id'] === (int) $currentUser['id'])) {
+if ($search !== null && Access::canAccessSearch($currentUser, $search)) {
     $newActive = !((int) $search['active'] === 1);
     $searchRepository->setActive($searchId, $newActive);
     $eventRepository->log($searchId, 'search_toggled', $newActive ? 'Recherche activée' : 'Recherche suspendue');

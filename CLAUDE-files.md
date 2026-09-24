@@ -44,9 +44,11 @@ chaque fichier ajouté, renommé ou supprimé.
 
 | Fichier | Rôle |
 |---|---|
-| `Killswitch.php` | Détecte le mode de secours (`AUTH_KILLSWITCH`) et fournit l'identité factice associée. |
-| `Session.php` | Point d'entrée unique pour connaître l'utilisateur courant et protéger une page (`requireAuth()`), login/logout de session. |
+| `Killswitch.php` | Détecte le mode de secours (`AUTH_KILLSWITCH`) et fournit l'identité factice associée (traitée comme administratrice). |
+| `Session.php` | Point d'entrée unique pour connaître l'utilisateur courant et protéger une page (`requireAuth()`), login/logout de session (avec statut administrateur). |
 | `EntraAuth.php` | Connexion déléguée des utilisateurs via Entra ID (flux « authorization code »). |
+| `DirectoryGroups.php` | Résout un groupe de l'annuaire par son nom et vérifie l'appartenance d'un utilisateur (autorisation admin/utilisateur, non granulaire). |
+| `Access.php` | Règle d'autorisation unique pour savoir qui peut voir/gérer une recherche (propriétaire, ou tout administrateur). |
 
 ## `src/Fosc/` — API des feuilles officielles
 
@@ -56,12 +58,13 @@ chaque fichier ajouté, renommé ou supprimé.
 | `NoneAuthStrategy.php` | Implémentation actuelle (aucune authentification requise). |
 | `FoscClient.php` | Appels HTTP : recherche, récupération du détail d'une publication, récupération du PDF. |
 | `FoscXmlParser.php` | Transforme les réponses XML en tableaux PHP. |
+| `SearchSyncService.php` | Recherche + stockage des preuves + préparation des notifications, pour chaque recherche active. N'envoie jamais lui-même d'e-mail (voir `Notify\NotificationDispatcher`) — c'est ce qui permet au bouton de synchronisation manuelle de fonctionner sans notifier personne. |
 
 ## `src/Graph/` — Microsoft Graph
 
 | Fichier | Rôle |
 |---|---|
-| `GraphClient.php` | Jeton applicatif partagé (client credentials) et appels HTTP génériques vers Microsoft Graph. |
+| `GraphClient.php` | Jeton applicatif partagé (client credentials) et appels HTTP génériques vers Microsoft Graph (`get`/`post`, tous deux renvoient le corps JSON décodé). |
 | `DirectorySearch.php` | Recherche de collègues dans l'annuaire, pour l'ajout de destinataires à une recherche. |
 | `MailSender.php` | Envoi d'un e-mail via Microsoft Graph, au nom de la boîte configurée. |
 
@@ -71,18 +74,19 @@ chaque fichier ajouté, renommé ou supprimé.
 |---|---|
 | `DigestBuilder.php` | Regroupe les notifications en attente par destinataire (un seul e-mail par personne et par exécution). |
 | `TemplateRenderer.php` | Rendu des gabarits Mustache (e-mails). |
+| `NotificationDispatcher.php` | Envoi effectif des notifications en attente. Volontairement séparé de `Fosc\SearchSyncService` : n'appeler que celui-ci permet de synchroniser sans jamais envoyer de courriel. |
 
 ## `src/Db/`
 
 | Fichier | Rôle |
 |---|---|
 | `Database.php` | Connexion PDO partagée (`connection()`) et connexion indépendante à délai court (`quickProbe()`, utilisée par la supervision). |
-| `Repositories/UserRepository.php` | Utilisateurs (création/mise à jour au login, recherche par identifiant). |
+| `Repositories/UserRepository.php` | Utilisateurs (création/mise à jour au login avec statut administrateur, recherche par identifiant, `touchFeedVisit()` pour le fil d'actualité). |
 | `Repositories/TenantRepository.php` | Feuilles officielles configurées, et détection d'un besoin d'afficher le sélecteur. |
-| `Repositories/SearchRepository.php` | Recherches enregistrées : CRUD, activation/désactivation, rattachement aux feuilles officielles, appariement UID/mot-clé. |
+| `Repositories/SearchRepository.php` | Recherches enregistrées : CRUD (propriétaire facultatif), activation/désactivation, rattachement aux feuilles officielles, appariement UID/mot-clé, `listAll()` pour la vue administrateur. |
 | `Repositories/WatcherRepository.php` | Destinataires supplémentaires (« watchers ») d'une recherche. |
 | `Repositories/PublicationRepository.php` | Publications FOSC stockées globalement par GUID. |
-| `Repositories/SearchHitRepository.php` | Correspondances (recherche, publication) trouvées, avec déduplication. |
+| `Repositories/SearchHitRepository.php` | Correspondances (recherche, publication) trouvées, avec déduplication, et `listFeedFor()` pour le fil d'actualité. |
 | `Repositories/SearchHitNotificationRepository.php` | Suivi d'envoi par destinataire (regroupement, marquage envoyé/échoué). |
 | `Repositories/CronRunRepository.php` | Journal de chaque exécution de recherche (succès/erreur, XML brut). |
 | `Repositories/EventRepository.php` | Journal d'audit par recherche (affiché sur la page « historique »). |
@@ -91,7 +95,7 @@ chaque fichier ajouté, renommé ou supprimé.
 
 | Fichier | Rôle |
 |---|---|
-| `cron_fosc_check.php` | Cron quotidien : recherche, stockage des preuves, notifications groupées. Écrit le battement de cœur `fosc_search`. |
+| `cron_fosc_check.php` | Cron quotidien : enchaîne `Fosc\SearchSyncService` puis `Notify\NotificationDispatcher`. Écrit le battement de cœur `fosc_search`. |
 | `cron_health_check.php` | Cron de supervision indépendant : vérifie le battement de cœur et l'accès à la base, alerte `ADMIN_ALERT_EMAIL` si besoin. |
 
 ## `templates/mail/` — gabarits Mustache
@@ -106,9 +110,9 @@ chaque fichier ajouté, renommé ou supprimé.
 
 | Fichier | Rôle |
 |---|---|
-| `partials/header.php` | En-tête commun (navigation, bandeau killswitch, message ponctuel). |
+| `partials/header.php` | En-tête commun (navigation avec lien vers le fil d'actualité et bouton de synchronisation manuelle pour les administrateurs, bandeau killswitch, message ponctuel). |
 | `partials/footer.php` | Pied commun (scripts Bootstrap). |
-| `searches/form.php` | Formulaire partagé de création/modification d'une recherche (mode, avertissement UID, aide sur la recherche par mot-clé). |
+| `searches/form.php` | Formulaire partagé de création/modification d'une recherche (mode et terme d'abord, nom facultatif ensuite, avertissement UID, aide sur la recherche par mot-clé). |
 
 ## `public/` — pages accessibles directement
 
@@ -116,16 +120,18 @@ chaque fichier ajouté, renommé ou supprimé.
 |---|---|
 | `index.php` | Redirige vers le tableau de bord (après vérification de connexion). |
 | `login.php` | Page de connexion (bouton vers Entra ID). |
-| `callback.php` | Traitement du retour de connexion Entra ID, création/mise à jour de l'utilisateur, ouverture de session. |
+| `callback.php` | Traitement du retour de connexion Entra ID : vérification d'appartenance aux groupes admin/utilisateur (`DirectoryGroups`), création/mise à jour de l'utilisateur, ouverture de session. |
 | `logout.php` | Déconnexion. |
-| `searches/index.php` | Tableau de bord : liste des recherches, activation/suspension, accès aux actions. |
-| `searches/create.php` | Création d'une recherche (avec option de recherche complémentaire en mode UID). |
-| `searches/edit.php` | Modification d'une recherche existante. |
+| `feed.php` | Fil d'actualité chronologique des publications trouvées (les siennes, ou toutes pour un administrateur), avec repère « nouveau » depuis la dernière visite. |
+| `admin/sync.php` | Bouton temporaire réservé aux administrateurs : déclenche `SearchSyncService` sans jamais appeler le dispatcher de notifications. |
+| `searches/index.php` | Tableau de bord : liste des recherches (les siennes, ou toutes avec propriétaire affiché pour un administrateur), activation/suspension, accès aux actions. |
+| `searches/create.php` | Création d'une recherche (propriétaire facultatif, nom facultatif avec repli sur le terme saisi, option de recherche complémentaire en mode UID). |
+| `searches/edit.php` | Modification d'une recherche existante (accès contrôlé par `Access::canAccessSearch()`). |
 | `searches/toggle.php` | Bascule active/inactive (action POST). |
 | `searches/delete.php` | Suppression d'une recherche (action POST). |
 | `searches/watchers.php` | Gestion des destinataires supplémentaires (recherche d'annuaire en arrière-plan, ajout, retrait). |
 | `searches/results.php` | Résultats trouvés pour une recherche, avec la mention légale sur la valeur du PDF signé. |
-| `searches/pdf.php` | Fournit le PDF stocké d'une publication trouvée (contrôle d'accès par propriétaire). |
+| `searches/pdf.php` | Fournit le PDF stocké d'une publication trouvée (accès contrôlé par `Access::canAccessSearch()`). |
 | `searches/events.php` | Historique des événements enregistrés pour une recherche. |
 | `assets/css/theme.css` | Surcharges Bootstrap (couleur d'accent). |
 | `assets/js/watcher-search.js` | Recherche de personnes en arrière-plan sur la page de gestion des destinataires. |

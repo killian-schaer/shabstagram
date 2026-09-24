@@ -22,7 +22,7 @@ final class Killswitch
     }
 
     /**
-     * @return array{id:null,display_name:string,upn:string,is_killswitch:bool}
+     * @return array{id:null,display_name:string,upn:string,is_killswitch:bool,is_admin:bool}
      */
     public static function syntheticUser(): array
     {
@@ -31,6 +31,9 @@ final class Killswitch
             'display_name' => Lang::t('auth.killswitch_display_name'),
             'upn' => 'killswitch@local',
             'is_killswitch' => true,
+            // Traitée comme administratrice : peut créer des recherches sans
+            // propriétaire et voir l'ensemble des recherches existantes.
+            'is_admin' => true,
         ];
     }
 }
